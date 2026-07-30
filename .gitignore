@@ -1,0 +1,25 @@
+# OS / editor
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+
+# Local extract / staging
+_extracted_anthrophibians/
+release/
+tools/
+
+# Packed uploads (rebuild from esp/bsa/scripts)
+*.zip
+
+# Papyrus / CK noise
+*.pex.bak
+*.psc.bak
+*.tmp
+*.log
+
+# Don't commit SkyUI headers copied into game Data
+# (sources in Scripts/Source are the ones we keep)
