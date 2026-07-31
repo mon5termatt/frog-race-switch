@@ -1,7 +1,7 @@
 Scriptname FRS_RaceSwitchQuest extends Quest
 {Stores the player's original race and grants transform potions.
 Frog cannot cast spells/shouts, so potions (alchemy) are the trigger.
-Midnight Brew stacks: each drink adds another duration chunk.
+Midnight Brew stacks via duration spells shown under Active Effects.
 Author: MON5TERMATT}
 
 Race Property FrogRace Auto
@@ -20,39 +20,28 @@ Potion Property PotionBecomeHumanTemp Auto
 {Midnight Brew — temporary human; each drink stacks more time.}
 
 float Property SecondsPerStack = 300.0 Auto
-{Seconds of human form added per Midnight Brew drunk.}
+{Seconds of human form added per Midnight Brew drunk. Spells in ESP must match.}
+
+Spell Property MidnightTimer1 Auto
+Spell Property MidnightTimer2 Auto
+Spell Property MidnightTimer3 Auto
+Spell Property MidnightTimer4 Auto
+Spell Property MidnightTimer5 Auto
+Spell Property MidnightTimer6 Auto
 
 Race Property StoredOriginalRace Auto Hidden
 
 Actor Property PlayerRef Auto
 
 bool _initDone = false
-bool _midnightPending = false
 int _midnightStacks = 0
+bool _cancelingMidnight = false
 
 Event OnInit()
 	RegisterForSingleUpdate(1.0)
 EndEvent
 
 Event OnUpdate()
-	if _midnightPending
-		_midnightStacks -= 1
-		if _midnightStacks > 0
-			float chunk = SecondsPerStack
-			if chunk < 10.0
-				chunk = 10.0
-			endif
-			RegisterForSingleUpdate(chunk)
-			Debug.Notification("Midnight holds... " + _midnightStacks + " stack(s) left.")
-			return
-		endif
-
-		_midnightPending = false
-		_midnightStacks = 0
-		BecomeFrog()
-		return
-	endif
-
 	if !_initDone
 		_initDone = true
 		EnsurePotions()
@@ -98,12 +87,64 @@ Race Function GetHumanRace()
 	return FallbackHumanRace
 EndFunction
 
-Function CancelMidnightTimer()
-	if _midnightPending || _midnightStacks > 0
-		_midnightPending = false
-		_midnightStacks = 0
-		UnregisterForUpdate()
+Spell Function GetMidnightTimerSpell(int aiStacks)
+	if aiStacks <= 1
+		return MidnightTimer1
+	elseif aiStacks == 2
+		return MidnightTimer2
+	elseif aiStacks == 3
+		return MidnightTimer3
+	elseif aiStacks == 4
+		return MidnightTimer4
+	elseif aiStacks == 5
+		return MidnightTimer5
 	endif
+	return MidnightTimer6
+EndFunction
+
+Function DispelMidnightTimers()
+	if PlayerRef == None
+		PlayerRef = Game.GetPlayer()
+	endif
+
+	if MidnightTimer1
+		PlayerRef.DispelSpell(MidnightTimer1)
+	endif
+	if MidnightTimer2
+		PlayerRef.DispelSpell(MidnightTimer2)
+	endif
+	if MidnightTimer3
+		PlayerRef.DispelSpell(MidnightTimer3)
+	endif
+	if MidnightTimer4
+		PlayerRef.DispelSpell(MidnightTimer4)
+	endif
+	if MidnightTimer5
+		PlayerRef.DispelSpell(MidnightTimer5)
+	endif
+	if MidnightTimer6
+		PlayerRef.DispelSpell(MidnightTimer6)
+	endif
+EndFunction
+
+Function CancelMidnightTimer()
+	_cancelingMidnight = true
+	_midnightStacks = 0
+	DispelMidnightTimers()
+	_cancelingMidnight = false
+EndFunction
+
+Function OnMidnightExpired()
+	; Dispel from CancelMidnightTimer should not turn the player into a frog.
+	if _cancelingMidnight
+		return
+	endif
+	if _midnightStacks <= 0
+		return
+	endif
+
+	_midnightStacks = 0
+	BecomeFrog(true)
 EndFunction
 
 Function StartMidnightBrew()
@@ -115,23 +156,26 @@ Function StartMidnightBrew()
 	bool alreadyHuman = target && PlayerRef.GetRace() == target
 
 	if !alreadyHuman
-		BecomeHuman(true)
-	endif
-
-	float chunk = SecondsPerStack
-	if chunk < 10.0
-		chunk = 10.0
+		BecomeHuman(true, true)
 	endif
 
 	_midnightStacks += 1
-
-	if !_midnightPending
-		_midnightPending = true
-		RegisterForSingleUpdate(chunk)
+	if _midnightStacks > 6
+		_midnightStacks = 6
 	endif
 
-	int totalSec = (_midnightStacks * chunk) as int
-	Debug.Notification("Midnight Brew x" + _midnightStacks + " (~" + totalSec + "s).")
+	_cancelingMidnight = true
+	DispelMidnightTimers()
+	_cancelingMidnight = false
+
+	Spell timerSpell = GetMidnightTimerSpell(_midnightStacks)
+	if timerSpell
+		; Apply as a self combat spell so the duration shows under Active Effects.
+		PlayerRef.DoCombatSpellApply(timerSpell, PlayerRef)
+	else
+		Debug.Notification("Frog Race Switch: Midnight timer spell is not set.")
+	endif
+
 	EnsurePotions()
 EndFunction
 
@@ -144,8 +188,10 @@ Race Function ResolveFrogRace()
 	return FrogRace
 EndFunction
 
-Function BecomeFrog()
-	CancelMidnightTimer()
+Function BecomeFrog(bool abFromMidnightExpire = false)
+	if !abFromMidnightExpire
+		CancelMidnightTimer()
+	endif
 
 	if PlayerRef == None
 		PlayerRef = Game.GetPlayer()
@@ -159,18 +205,22 @@ Function BecomeFrog()
 
 	Race current = PlayerRef.GetRace()
 	if current == frog
-		Debug.Notification("Already a frog.")
+		if !abFromMidnightExpire
+			Debug.Notification("Already a frog.")
+		endif
 		EnsurePotions()
 		return
 	endif
 
 	StoredOriginalRace = current
 	PlayerRef.SetRace(frog)
-	Debug.Notification("Became Frog.")
+	if !abFromMidnightExpire
+		Debug.Notification("Became Frog.")
+	endif
 	EnsurePotions()
 EndFunction
 
-Function BecomeHuman(bool abTemporary = false)
+Function BecomeHuman(bool abTemporary = false, bool abSilent = false)
 	if !abTemporary
 		CancelMidnightTimer()
 	endif
@@ -186,7 +236,9 @@ Function BecomeHuman(bool abTemporary = false)
 	endif
 
 	if PlayerRef.GetRace() == target
-		Debug.Notification("Already human.")
+		if !abSilent && !abTemporary
+			Debug.Notification("Already human.")
+		endif
 		EnsurePotions()
 		return
 	endif
@@ -197,9 +249,7 @@ Function BecomeHuman(bool abTemporary = false)
 	endif
 
 	PlayerRef.SetRace(target)
-	if abTemporary
-		Debug.Notification("Became Human — until midnight.")
-	else
+	if !abSilent && !abTemporary
 		Debug.Notification("Became Human.")
 	endif
 	EnsurePotions()

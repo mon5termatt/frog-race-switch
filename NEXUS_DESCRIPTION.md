@@ -18,7 +18,7 @@ Makes you human until you drink Swamp Juice again.
 
 ### Midnight Brew
 
-Makes you human for a while. It stacks, so each extra drink buys you about five more minutes.
+Makes you human for a while. It stacks, so each extra drink buys you about five more minutes. Remaining time shows under Active Effects as **Midnight Brew**.
 
 Your original race is remembered. If you somehow start already as a frog with nothing stored, it falls back to Nord.
 
@@ -36,7 +36,7 @@ No SKSE. No SkyUI.
 Install with Vortex or MO2, or drop these into `Data`:
 
 * `FrogRaceSwitch.esp`
-* `FrogRaceSwitch.bsa`
+* `Scripts\` (the `FRS_*.pex` files)
 
 Load it after `Playable Frog.esp`.
 

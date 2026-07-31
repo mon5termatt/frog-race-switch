@@ -10,7 +10,7 @@ Playing as a frog is fun until you hit the creature-race limits (no spells, jump
 | --- | --- |
 | **Swamp Juice** | Become a frog |
 | **Bipedal Brew** | Stay human until Swamp Juice |
-| **Midnight Brew** | Temporary human; **stacks** (~5 minutes per drink) |
+| **Midnight Brew** | Temporary human; **stacks** (~5 minutes per drink), timer under Active Effects |
 
 You get one of each on load. After a transform, anything you are out of is topped back up to one.
 
@@ -23,7 +23,7 @@ No SKSE. No SkyUI.
 
 ## Install
 
-Load `FrogRaceSwitch.esp` (and its BSA) **after** `Playable Frog.esp`.
+Load `FrogRaceSwitch.esp` and the `Scripts\FRS_*.pex` files **after** `Playable Frog.esp`.
 
 Nexus description copy lives in [`NEXUS_DESCRIPTION.md`](NEXUS_DESCRIPTION.md).
 
