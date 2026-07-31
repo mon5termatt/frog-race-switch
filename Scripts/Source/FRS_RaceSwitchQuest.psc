@@ -84,8 +84,9 @@ Function CaptureOriginalIfNeeded()
 		PlayerRef = Game.GetPlayer()
 	endif
 
+	Race frog = ResolveFrogRace()
 	Race current = PlayerRef.GetRace()
-	if current != FrogRace && StoredOriginalRace == None
+	if current != frog && StoredOriginalRace == None
 		StoredOriginalRace = current
 	endif
 EndFunction
@@ -134,6 +135,15 @@ Function StartMidnightBrew()
 	EnsurePotions()
 EndFunction
 
+Race Function ResolveFrogRace()
+	if FrogRace
+		return FrogRace
+	endif
+	; Survives bad/missing CK property fills and old saves where the master was absent.
+	FrogRace = Game.GetFormFromFile(0x00000810, "Playable Frog.esp") as Race
+	return FrogRace
+EndFunction
+
 Function BecomeFrog()
 	CancelMidnightTimer()
 
@@ -141,20 +151,21 @@ Function BecomeFrog()
 		PlayerRef = Game.GetPlayer()
 	endif
 
-	if FrogRace == None
-		Debug.Notification("Frog Race Switch: FrogRace property is not set.")
+	Race frog = ResolveFrogRace()
+	if frog == None
+		Debug.Notification("Frog Race Switch: FrogRace not found (is Playable Frog.esp enabled?)")
 		return
 	endif
 
 	Race current = PlayerRef.GetRace()
-	if current == FrogRace
+	if current == frog
 		Debug.Notification("Already a frog.")
 		EnsurePotions()
 		return
 	endif
 
 	StoredOriginalRace = current
-	PlayerRef.SetRace(FrogRace)
+	PlayerRef.SetRace(frog)
 	Debug.Notification("Became Frog.")
 	EnsurePotions()
 EndFunction
@@ -180,7 +191,8 @@ Function BecomeHuman(bool abTemporary = false)
 		return
 	endif
 
-	if StoredOriginalRace == None && PlayerRef.GetRace() != FrogRace
+	Race frog = ResolveFrogRace()
+	if StoredOriginalRace == None && PlayerRef.GetRace() != frog
 		StoredOriginalRace = PlayerRef.GetRace()
 	endif
 

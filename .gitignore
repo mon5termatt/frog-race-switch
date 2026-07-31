@@ -7,19 +7,24 @@ Desktop.ini
 .vscode/
 .idea/
 
-# Local extract / staging
+# Local extracts / staging (not part of the mod)
 _extracted_anthrophibians/
-release/
+_skse_extract/
+_tools/
 tools/
+release/
+
+# Third-party redistributables
+skse64_*.7z
+skse64_*.zip
 
 # Packed uploads (rebuild from esp/bsa/scripts)
 *.zip
 
-# Papyrus / CK noise
+# Backups / CK / Papyrus noise
+*.esp.bak*
 *.pex.bak
 *.psc.bak
+*.bak-*
 *.tmp
 *.log
-
-# Don't commit SkyUI headers copied into game Data
-# (sources in Scripts/Source are the ones we keep)
